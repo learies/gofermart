@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -16,8 +15,6 @@ func main() {
 	// Initialize the application
 	application := app.NewApp()
 	defer application.Close()
-
-	fmt.Println(cfg.DatabaseURI)
 
 	// Start the HTTP server
 	log.Printf("Starting server on %s\n", cfg.RunAddress)
