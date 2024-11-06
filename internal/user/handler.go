@@ -8,12 +8,12 @@ import (
 )
 
 type Handler struct {
-	repo Repository
+	repo repository
 }
 
 func NewHandler(dbPool *pgxpool.Pool) *Handler {
 	return &Handler{
-		repo: NewPostgresRepository(dbPool),
+		repo: newPostgresRepository(dbPool),
 	}
 }
 
@@ -23,13 +23,13 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user User
+	var user user
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	if err := h.repo.CreateUser(user); err != nil {
+	if err := h.repo.createUser(user); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
