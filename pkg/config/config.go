@@ -7,10 +7,11 @@ import (
 
 // Config struct holds the configuration values for the application
 type Config struct {
-	ServerHost  string
-	ServerPort  string
-	RunAddress  string
-	DatabaseURI string
+	ServerHost           string
+	ServerPort           string
+	RunAddress           string
+	DatabaseURI          string
+	AccrualSystemAddress string
 }
 
 // NewConfig creates a new Config instance and loads the configuration
@@ -37,9 +38,11 @@ func (cfg *Config) loadFlags() {
 	// Load environment variables
 	cfg.RunAddress = getEnv("RUN_ADDRESS", defaultAddress)
 	cfg.DatabaseURI = getEnv("DATABASE_URI", defaultPostgresURI)
+	cfg.AccrualSystemAddress = getEnv("ACCRUAL_SYSTEM_ADDRESS", "")
 
 	// Define command-line flags
 	flag.StringVar(&cfg.RunAddress, "a", cfg.RunAddress, "run address (default: localhost:8080)")
 	flag.StringVar(&cfg.DatabaseURI, "d", cfg.DatabaseURI, "database URI (default: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable)")
+	flag.StringVar(&cfg.AccrualSystemAddress, "r", cfg.AccrualSystemAddress, "accrual system address")
 	flag.Parse()
 }
