@@ -6,18 +6,22 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type service interface {
-	hashPassword(password string) (string, error)
-	checkPassword(hashedPassword, password string) error
+// AuthService defines the methods for password hashing and validation.
+type AuthService interface {
+	HashPassword(password string) (string, error)
+	VerifyPassword(hashedPassword, password string) error
 }
 
-type userService struct{}
+// authService is a concrete implementation of AuthService.
+type authService struct{}
 
-func newUserService() service {
-	return &userService{}
+// NewAuthService creates a new instance of AuthService.
+func NewAuthService() AuthService {
+	return &authService{}
 }
 
-func (s *userService) hashPassword(password string) (string, error) {
+// HashPassword hashes the given password using bcrypt.
+func (s *authService) HashPassword(password string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
@@ -25,7 +29,9 @@ func (s *userService) hashPassword(password string) (string, error) {
 	return string(hashedPassword), nil
 }
 
-func (s *userService) checkPassword(hashedPassword, password string) error {
+// VerifyPassword compares a hashed password with a plaintext password.
+// Returns an error if the passwords do not match.
+func (s *authService) VerifyPassword(hashedPassword, password string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	if err != nil {
 		return errors.New("invalid password")

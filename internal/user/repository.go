@@ -14,21 +14,21 @@ type repository interface {
 
 // PostgresRepository is a repository for user data in a PostgreSQL database
 type postgresRepository struct {
-	db      *pgxpool.Pool
-	service service
+	db   *pgxpool.Pool
+	auth AuthService
 }
 
 // NewPostgresRepository creates a new PostgresRepository instance
 func newPostgresRepository(dbPool *pgxpool.Pool) repository {
 	return &postgresRepository{
-		db:      dbPool,
-		service: newUserService(),
+		db:   dbPool,
+		auth: NewAuthService(),
 	}
 }
 
 // CreateUser creates a new user in the database
 func (repo *postgresRepository) createUser(user user) error {
-	hashedPassword, err := repo.service.hashPassword(user.Password)
+	hashedPassword, err := repo.auth.HashPassword(user.Password)
 	if err != nil {
 		return err
 	}
