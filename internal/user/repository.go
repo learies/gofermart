@@ -19,7 +19,7 @@ type postgresRepository struct {
 }
 
 // NewPostgresRepository creates a new PostgresRepository instance
-func newPostgresRepository(dbPool *pgxpool.Pool) repository {
+func NewRepository(dbPool *pgxpool.Pool) repository {
 	return &postgresRepository{
 		db:   dbPool,
 		auth: NewAuthService(),

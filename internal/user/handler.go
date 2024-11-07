@@ -13,7 +13,7 @@ type Handler struct {
 
 func NewHandler(dbPool *pgxpool.Pool) *Handler {
 	return &Handler{
-		repo: newPostgresRepository(dbPool),
+		repo: NewRepository(dbPool),
 	}
 }
 
