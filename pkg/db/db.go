@@ -9,7 +9,7 @@ import (
 
 // SetupDB sets up the database connection
 func SetupDB() (*pgxpool.Pool, error) {
-	dsn := os.Getenv("DATABASE_URL")
+	dsn := os.Getenv("DATABASE_URI")
 
 	config, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
