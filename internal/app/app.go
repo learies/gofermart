@@ -25,6 +25,7 @@ func NewApp() *App {
 	userHandler := user.NewHandler(dbPool)
 
 	router.Post("/api/user/register", userHandler.RegisterUser)
+	router.Post("/api/user/login", userHandler.LoginUser)
 
 	return &App{
 		Routes: router,
