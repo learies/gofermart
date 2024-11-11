@@ -4,9 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/go-chi/chi"
 	"github.com/learies/gofermart/internal/config"
-	"github.com/learies/gofermart/internal/handlers"
 	"github.com/learies/gofermart/internal/routes"
 )
 
@@ -15,22 +13,16 @@ type App struct {
 }
 
 func NewApp() *App {
-	return &App{
+	app := &App{
 		Router: routes.NewRouter(),
 	}
+	app.Router.Initialize()
+	return app
 }
 
 func (a *App) Run(cfg *config.Config) {
-
-	r := a.Router
-	userHandlers := handlers.NewHandlers()
-
-	r.Route("/", func(r chi.Router) {
-		r.Get("/", userHandlers.RegisterUser)
-	})
-
 	log.Printf("Starting server on %s\n", cfg.RunAddress)
-	if err := http.ListenAndServe(cfg.RunAddress, r.Mux); err != nil {
+	if err := http.ListenAndServe(cfg.RunAddress, a.Router.Mux); err != nil {
 		log.Fatalf("Could not start server: %v", err)
 	}
 }
