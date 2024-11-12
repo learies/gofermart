@@ -5,7 +5,6 @@ import (
 	"os"
 )
 
-// Config struct holds the configuration values for the application
 type Config struct {
 	ServerHost           string
 	ServerPort           string
@@ -14,7 +13,6 @@ type Config struct {
 	AccrualSystemAddress string
 }
 
-// NewConfig creates a new Config instance and loads the configuration
 func NewConfig() *Config {
 	cfg := &Config{}
 	cfg.loadFlags()
@@ -28,7 +26,6 @@ func getEnv(key string, fallback string) string {
 	return fallback
 }
 
-// loadFlags parses command-line flags and populates the Config struct
 func (cfg *Config) loadFlags() {
 	const (
 		defaultAddress     = "localhost:8080"

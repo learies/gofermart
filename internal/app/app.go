@@ -12,11 +12,11 @@ type App struct {
 	Router *routes.Router
 }
 
-func NewApp() *App {
+func NewApp(cfg *config.Config) *App {
 	app := &App{
 		Router: routes.NewRouter(),
 	}
-	app.Router.Initialize()
+	app.Router.Initialize(cfg)
 	return app
 }
 

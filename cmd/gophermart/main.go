@@ -8,6 +8,6 @@ import (
 func main() {
 	cfg := config.NewConfig()
 
-	application := app.NewApp()
+	application := app.NewApp(cfg)
 	application.Run(cfg)
 }
