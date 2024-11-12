@@ -18,7 +18,7 @@ func NewRouter() *Router {
 	return &Router{Mux: chi.NewRouter()}
 }
 
-func (r *Router) Initialize(cfg *config.Config) {
+func (r *Router) Initialize(cfg *config.Config) error {
 
 	dbPool, err := postgres.SetupDB()
 	if err != nil {
@@ -32,4 +32,6 @@ func (r *Router) Initialize(cfg *config.Config) {
 		r.Get("/register", userHandlers.RegisterUser)
 		r.Post("/login", userHandlers.LoginUser)
 	})
+
+	return nil
 }

@@ -10,19 +10,22 @@ import (
 
 type App struct {
 	Router *routes.Router
+	Config *config.Config
 }
 
-func NewApp(cfg *config.Config) *App {
-	app := &App{
-		Router: routes.NewRouter(),
+func NewApp(cfg *config.Config) (*App, error) {
+	router := routes.NewRouter()
+	if err := router.Initialize(cfg); err != nil {
+		return nil, err
 	}
-	app.Router.Initialize(cfg)
-	return app
+
+	return &App{
+		Router: router,
+		Config: cfg,
+	}, nil
 }
 
-func (a *App) Run(cfg *config.Config) {
-	log.Printf("Starting server on %s\n", cfg.RunAddress)
-	if err := http.ListenAndServe(cfg.RunAddress, a.Router.Mux); err != nil {
-		log.Fatalf("Could not start server: %v", err)
-	}
+func (a *App) Run() error {
+	log.Printf("Starting server on %s\n", a.Config.RunAddress)
+	return http.ListenAndServe(a.Config.RunAddress, a.Router.Mux)
 }
