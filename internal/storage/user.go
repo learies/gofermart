@@ -4,28 +4,29 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/learies/gofermart/internal/models"
 	"github.com/learies/gofermart/internal/services"
 )
 
-type Storage interface {
+type UserStorage interface {
 	CreateUser(user models.User) error
 	GetUserByUsername(username string) (*models.User, error)
 }
 
-type PostgresStorage struct {
+type userStorage struct {
 	db   *pgxpool.Pool
 	auth services.AuthService
 }
 
-func NewPostgresStorage(dbPool *pgxpool.Pool) Storage {
-	return &PostgresStorage{
+func NewPostgresStorage(dbPool *pgxpool.Pool) UserStorage {
+	return &userStorage{
 		db:   dbPool,
 		auth: services.NewAuthService(),
 	}
 }
 
-func (store *PostgresStorage) CreateUser(user models.User) error {
+func (store *userStorage) CreateUser(user models.User) error {
 	hashedPassword, err := store.auth.HashPassword(user.Password)
 	if err != nil {
 		return err
@@ -41,7 +42,7 @@ func (store *PostgresStorage) CreateUser(user models.User) error {
 	return nil
 }
 
-func (store *PostgresStorage) GetUserByUsername(username string) (*models.User, error) {
+func (store *userStorage) GetUserByUsername(username string) (*models.User, error) {
 	row := store.db.QueryRow(context.Background(),
 		"SELECT id, username, password FROM users WHERE username=$1", username)
 

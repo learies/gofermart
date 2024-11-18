@@ -15,7 +15,7 @@ import (
 )
 
 type Handler struct {
-	repo  storage.Storage
+	user  storage.UserStorage
 	auth  services.AuthService
 	jwt   services.JWTService
 	order storage.OrderStorage
@@ -23,7 +23,7 @@ type Handler struct {
 
 func NewHandler(dbPool *pgxpool.Pool) *Handler {
 	return &Handler{
-		repo:  storage.NewPostgresStorage(dbPool),
+		user:  storage.NewPostgresStorage(dbPool),
 		auth:  services.NewAuthService(),
 		jwt:   services.NewJWTService(),
 		order: storage.NewOrderStorage(dbPool),
@@ -44,7 +44,7 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.repo.CreateUser(user); err != nil {
+	if err := h.user.CreateUser(user); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -76,7 +76,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbUser, err := h.repo.GetUserByUsername(user.Username)
+	dbUser, err := h.user.GetUserByUsername(user.Username)
 	if err != nil {
 		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 		return

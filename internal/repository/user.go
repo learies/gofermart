@@ -7,25 +7,25 @@ import (
 	"github.com/learies/gofermart/internal/storage"
 )
 
-type Repository interface {
+type UserRepository interface {
 	CreateUser(user models.User) error
 	GetUserByUsername(username string) (*models.User, error)
 }
 
-type repository struct {
-	storage storage.Storage
+type userRepository struct {
+	storage storage.UserStorage
 }
 
-func NewRepository(dbPool *pgxpool.Pool) Repository {
-	return &repository{
+func NewRepository(dbPool *pgxpool.Pool) UserRepository {
+	return &userRepository{
 		storage: storage.NewPostgresStorage(dbPool),
 	}
 }
 
-func (repo *repository) CreateUser(user models.User) error {
+func (repo *userRepository) CreateUser(user models.User) error {
 	return repo.storage.CreateUser(user)
 }
 
-func (repo *repository) GetUserByUsername(username string) (*models.User, error) {
+func (repo *userRepository) GetUserByUsername(username string) (*models.User, error) {
 	return repo.storage.GetUserByUsername(username)
 }
