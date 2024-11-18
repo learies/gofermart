@@ -32,7 +32,7 @@ func (r *Router) Initialize(cfg *config.Config) error {
 	userHandlers := handlers.NewHandler(dbPool)
 
 	routes.Route("/api/user", func(r chi.Router) {
-		r.Get("/register", userHandlers.RegisterUser)
+		r.Post("/register", userHandlers.RegisterUser)
 		r.Post("/login", userHandlers.LoginUser)
 	})
 
