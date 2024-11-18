@@ -7,6 +7,7 @@ import (
 
 	"github.com/learies/gofermart/internal/config"
 	"github.com/learies/gofermart/internal/handlers"
+	internalMiddleware "github.com/learies/gofermart/internal/middleware"
 	"github.com/learies/gofermart/internal/storage/postgres"
 )
 
@@ -26,6 +27,8 @@ func (r *Router) Initialize(cfg *config.Config) error {
 	}
 
 	routes := r.Mux
+	routes.Use(internalMiddleware.JWTMiddleware)
+
 	userHandlers := handlers.NewHandler(dbPool)
 
 	routes.Route("/api/user", func(r chi.Router) {

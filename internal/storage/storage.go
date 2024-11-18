@@ -43,10 +43,10 @@ func (store *PostgresStorage) CreateUser(user models.User) error {
 
 func (store *PostgresStorage) GetUserByUsername(username string) (*models.User, error) {
 	row := store.db.QueryRow(context.Background(),
-		"SELECT username, password FROM users WHERE username=$1", username)
+		"SELECT id, username, password FROM users WHERE username=$1", username)
 
 	var user models.User
-	err := row.Scan(&user.Username, &user.Password)
+	err := row.Scan(&user.ID, &user.Username, &user.Password)
 	if err != nil {
 		return nil, err
 	}

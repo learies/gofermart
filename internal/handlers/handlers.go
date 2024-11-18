@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -14,14 +15,18 @@ import (
 type Handler struct {
 	repo storage.Storage
 	auth services.AuthService
+	jwt  services.JWTService
 }
 
 func NewHandler(dbPool *pgxpool.Pool) *Handler {
 	return &Handler{
 		repo: storage.NewPostgresStorage(dbPool),
 		auth: services.NewAuthService(),
+		jwt:  services.NewJWTService(),
 	}
 }
+
+var expirationTime = time.Now().Add(1 * time.Minute)
 
 func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -40,12 +45,22 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token := h.jwt.GenerateToken(user.ID, expirationTime)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Expires:  expirationTime,
+		HttpOnly: true,
+		Path:     "/",
+	})
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(user)
 }
 
 func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
+
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
@@ -67,6 +82,16 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 		return
 	}
+
+	token := h.jwt.GenerateToken(dbUser.ID, expirationTime)
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Expires:  expirationTime,
+		HttpOnly: true,
+		Path:     "/",
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
