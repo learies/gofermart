@@ -18,6 +18,16 @@ func CreateUsersTable(pool *pgxpool.Pool) error {
 	return err
 }
 
+func CreateOrdersTable(pool *pgxpool.Pool) error {
+	_, err := pool.Exec(context.Background(),
+		`CREATE TABLE IF NOT EXISTS orders (
+		id BIGINT PRIMARY KEY,
+		user_id INTEGER NOT NULL REFERENCES users(id)
+	)`)
+
+	return err
+}
+
 func SetupDB() (*pgxpool.Pool, error) {
 	dsn := os.Getenv("DATABASE_URI")
 
@@ -32,6 +42,11 @@ func SetupDB() (*pgxpool.Pool, error) {
 	}
 
 	err = CreateUsersTable(pool)
+	if err != nil {
+		return nil, err
+	}
+
+	err = CreateOrdersTable(pool)
 	if err != nil {
 		return nil, err
 	}

@@ -34,6 +34,7 @@ func (r *Router) Initialize(cfg *config.Config) error {
 	routes.Route("/api/user", func(r chi.Router) {
 		r.Post("/register", userHandlers.RegisterUser)
 		r.Post("/login", userHandlers.LoginUser)
+		r.Post("/orders", userHandlers.CreateOrder)
 	})
 
 	return nil
