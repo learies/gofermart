@@ -2,6 +2,7 @@ package repository
 
 import (
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/learies/gofermart/internal/models"
 	"github.com/learies/gofermart/internal/storage"
 )
