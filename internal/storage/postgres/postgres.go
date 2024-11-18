@@ -7,6 +7,17 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+func CreateUsersTable(pool *pgxpool.Pool) error {
+	_, err := pool.Exec(context.Background(),
+		`CREATE TABLE IF NOT EXISTS users (
+		id SERIAL PRIMARY KEY,
+		username VARCHAR(255) UNIQUE NOT NULL,
+		password VARCHAR(255) NOT NULL
+	)`)
+
+	return err
+}
+
 func SetupDB() (*pgxpool.Pool, error) {
 	dsn := os.Getenv("DATABASE_URI")
 
@@ -16,6 +27,11 @@ func SetupDB() (*pgxpool.Pool, error) {
 	}
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	if err != nil {
+		return nil, err
+	}
+
+	err = CreateUsersTable(pool)
 	if err != nil {
 		return nil, err
 	}
