@@ -13,19 +13,19 @@ type UserRepository interface {
 }
 
 type userRepository struct {
-	storage storage.UserStorage
+	userStorage storage.UserStorage
 }
 
 func NewRepository(dbPool *pgxpool.Pool) UserRepository {
 	return &userRepository{
-		storage: storage.NewPostgresStorage(dbPool),
+		userStorage: storage.NewPostgresStorage(dbPool),
 	}
 }
 
 func (repo *userRepository) CreateUser(user models.User) error {
-	return repo.storage.CreateUser(user)
+	return repo.userStorage.CreateUser(user)
 }
 
 func (repo *userRepository) GetUserByUsername(username string) (*models.User, error) {
-	return repo.storage.GetUserByUsername(username)
+	return repo.userStorage.GetUserByUsername(username)
 }
