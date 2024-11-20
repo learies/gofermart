@@ -10,6 +10,7 @@ import (
 
 type OrderStorage interface {
 	CreateOrder(order models.Order) error
+	GetOrdersByUserID(userID int) ([]models.Order, error)
 }
 
 type orderStorage struct {
@@ -31,4 +32,24 @@ func (store *orderStorage) CreateOrder(order models.Order) error {
 	}
 
 	return nil
+}
+
+func (store *orderStorage) GetOrdersByUserID(userID int) ([]models.Order, error) {
+	rows, err := store.db.Query(context.Background(),
+		"SELECT id, user_id FROM orders WHERE user_id = $1", userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var orders []models.Order
+	for rows.Next() {
+		var order models.Order
+		if err := rows.Scan(&order.OrderID, &order.UserID); err != nil {
+			return nil, err
+		}
+		orders = append(orders, order)
+	}
+
+	return orders, nil
 }
