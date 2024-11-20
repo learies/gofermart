@@ -2,9 +2,9 @@ package middleware
 
 import (
 	"context"
-	"log"
 	"net/http"
 
+	"github.com/learies/gofermart/internal/config/logger"
 	"github.com/learies/gofermart/internal/services"
 )
 
@@ -22,7 +22,7 @@ func JWTMiddleware(next http.Handler) http.Handler {
 		if tokenString != "" {
 			userID, err := jwtService.VerifyToken(tokenString)
 			if err != nil {
-				log.Println("Invalid token")
+				logger.Log.Warn("Invalid token", "error", err)
 				http.Error(w, "Forbidden", http.StatusForbidden)
 				return
 			}

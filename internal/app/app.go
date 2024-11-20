@@ -1,10 +1,10 @@
 package app
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/learies/gofermart/internal/config"
+	"github.com/learies/gofermart/internal/config/logger"
 	"github.com/learies/gofermart/internal/routes"
 )
 
@@ -26,6 +26,6 @@ func NewApp(cfg *config.Config) (*App, error) {
 }
 
 func (a *App) Run() error {
-	log.Printf("Starting server on %s\n", a.Config.RunAddress)
+	logger.Log.Info("Starting server", "address", a.Config.RunAddress)
 	return http.ListenAndServe(a.Config.RunAddress, a.Router.Mux)
 }

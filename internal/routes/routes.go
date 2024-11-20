@@ -1,11 +1,10 @@
 package routes
 
 import (
-	"log"
-
 	"github.com/go-chi/chi"
 
 	"github.com/learies/gofermart/internal/config"
+	"github.com/learies/gofermart/internal/config/logger"
 	"github.com/learies/gofermart/internal/handlers"
 	internalMiddleware "github.com/learies/gofermart/internal/middleware"
 	"github.com/learies/gofermart/internal/storage/postgres"
@@ -23,11 +22,12 @@ func (r *Router) Initialize(cfg *config.Config) error {
 
 	dbPool, err := postgres.SetupDB()
 	if err != nil {
-		log.Fatalf("Unable to connect to database: %v\n", err)
+		logger.Log.Error("Unable to connect to database", "error", err)
 	}
 
 	routes := r.Mux
 	routes.Use(internalMiddleware.JWTMiddleware)
+	routes.Use(internalMiddleware.WithLogging)
 
 	userHandlers := handlers.NewHandler(dbPool)
 
