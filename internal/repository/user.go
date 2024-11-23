@@ -8,7 +8,7 @@ import (
 )
 
 type UserRepository interface {
-	CreateUser(user models.User) error
+	CreateUser(username, password string) (int64, error)
 	GetUserByUsername(username string) (*models.User, error)
 }
 
@@ -22,8 +22,8 @@ func NewRepository(dbPool *pgxpool.Pool) UserRepository {
 	}
 }
 
-func (repo *userRepository) CreateUser(user models.User) error {
-	return repo.userStorage.CreateUser(user)
+func (repo *userRepository) CreateUser(username, password string) (int64, error) {
+	return repo.userStorage.CreateUser(username, password)
 }
 
 func (repo *userRepository) GetUserByUsername(username string) (*models.User, error) {

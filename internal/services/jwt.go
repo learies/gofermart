@@ -7,8 +7,8 @@ import (
 )
 
 type JWTService interface {
-	GenerateToken(userID int, expirationTime time.Time) string
-	VerifyToken(tokenString string) (int, error)
+	GenerateToken(userID int64, expirationTime time.Time) string
+	VerifyToken(tokenString string) (int64, error)
 }
 
 type jwtService struct{}
@@ -19,10 +19,10 @@ func NewJWTService() JWTService {
 
 type Claims struct {
 	jwt.RegisteredClaims
-	UserID int `json:"user_id"`
+	UserID int64 `json:"user_id"`
 }
 
-func (j *jwtService) GenerateToken(userID int, expirationTime time.Time) string {
+func (j *jwtService) GenerateToken(userID int64, expirationTime time.Time) string {
 	var tokenString string
 
 	claims := &Claims{
@@ -38,7 +38,7 @@ func (j *jwtService) GenerateToken(userID int, expirationTime time.Time) string 
 	return tokenString
 }
 
-func (j *jwtService) VerifyToken(tokenString string) (int, error) {
+func (j *jwtService) VerifyToken(tokenString string) (int64, error) {
 	claims := &Claims{}
 
 	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {

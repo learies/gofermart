@@ -2,15 +2,20 @@ package storage
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/learies/gofermart/internal/models"
 	"github.com/learies/gofermart/internal/services"
 )
 
+var ErrConflict = errors.New("Data conflict")
+
 type UserStorage interface {
-	CreateUser(user models.User) error
+	CreateUser(username, password string) (int64, error)
 	GetUserByUsername(username string) (*models.User, error)
 }
 
@@ -26,20 +31,28 @@ func NewPostgresStorage(dbPool *pgxpool.Pool) UserStorage {
 	}
 }
 
-func (store *userStorage) CreateUser(user models.User) error {
-	hashedPassword, err := store.auth.HashPassword(user.Password)
+func (store *userStorage) CreateUser(username, password string) (int64, error) {
+
+	hashedPassword, err := store.auth.HashPassword(password)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	_, err = store.db.Exec(context.Background(),
-		"INSERT INTO users (username, password) VALUES ($1, $2)",
-		user.Username, hashedPassword)
+	row := store.db.QueryRow(context.Background(),
+		"INSERT INTO users (username, password) VALUES($1, $2) RETURNING id",
+		username, hashedPassword)
+
+	var userID int64
+	err = row.Scan(&userID)
 	if err != nil {
-		return err
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			err = ErrConflict
+		}
+		return userID, err
 	}
 
-	return nil
+	return userID, nil
 }
 
 func (store *userStorage) GetUserByUsername(username string) (*models.User, error) {

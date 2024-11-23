@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi"
 
 	"github.com/learies/gofermart/internal/config"
@@ -32,11 +34,16 @@ func (r *Router) Initialize(cfg *config.Config) error {
 	userHandlers := handlers.NewHandler(dbPool)
 
 	routes.Route("/api/user", func(r chi.Router) {
-		r.Post("/register", userHandlers.RegisterUser)
-		r.Post("/login", userHandlers.LoginUser)
-		r.Post("/orders", userHandlers.CreateOrder)
-		r.Get("/orders", userHandlers.GetOrders)
+		r.Post("/register", userHandlers.RegisterUser())
+		r.Post("/login", userHandlers.LoginUser())
+		r.Post("/orders", userHandlers.CreateOrder())
+		r.Get("/orders", userHandlers.GetOrders())
+		r.MethodNotAllowed(methodNotAllowedHandler)
 	})
 
 	return nil
+}
+
+func methodNotAllowedHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Method not allowed", http.StatusBadRequest)
 }
