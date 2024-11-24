@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
 
 	"github.com/learies/gofermart/internal/models"
+	"github.com/learies/gofermart/internal/storage"
 )
 
 func (h *Handler) CreateOrder() http.HandlerFunc {
@@ -42,14 +44,19 @@ func (h *Handler) CreateOrder() http.HandlerFunc {
 			UserID:  UserID,
 		}
 
-		if err := h.order.CreateOrder(newOrder); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+		err = h.order.CreateOrder(newOrder)
+		if err != nil {
+			if errors.Is(err, storage.ErrConflict) {
+				http.Error(w, "We already have that order", http.StatusOK)
+				return
+			}
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(newOrder)
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusAccepted)
+		w.Write([]byte("New order number has been accepted for processing"))
 	}
 }
 

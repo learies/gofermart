@@ -2,7 +2,10 @@ package storage
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/learies/gofermart/internal/models"
@@ -24,10 +27,17 @@ func NewOrderStorage(dbPool *pgxpool.Pool) OrderStorage {
 }
 
 func (store *orderStorage) CreateOrder(order models.Order) error {
-	_, err := store.db.Exec(context.Background(),
-		"INSERT INTO orders (id, user_id) VALUES ($1, $2)",
+	row := store.db.QueryRow(context.Background(),
+		"INSERT INTO orders (id, user_id) VALUES ($1, $2) RETURNING id",
 		order.OrderID, order.UserID)
+
+	var number int
+	err := row.Scan(&number)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			err = ErrConflict
+		}
 		return err
 	}
 
