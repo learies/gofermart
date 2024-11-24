@@ -69,11 +69,20 @@ func (h *Handler) GetOrders() http.HandlerFunc {
 			return
 		}
 
-		UserID := r.Context().Value("userID").(int64)
+		UserID, ok := r.Context().Value("userID").(int64)
+		if !ok {
+			http.Error(w, "User is not authenticated", http.StatusUnauthorized)
+			return
+		}
 
 		orders, err := h.order.GetOrdersByUserID(UserID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if len(orders) == 0 {
+			http.Error(w, "No orders found", http.StatusAccepted)
 			return
 		}
 
