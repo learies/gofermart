@@ -13,6 +13,7 @@ import (
 
 type OrderStorage interface {
 	CreateOrder(order models.Order) error
+	GetOrderByOrderID(orderID int) (models.Order, error)
 	GetOrdersByUserID(userID int64) ([]models.Order, error)
 }
 
@@ -42,6 +43,20 @@ func (store *orderStorage) CreateOrder(order models.Order) error {
 	}
 
 	return nil
+}
+
+func (store *orderStorage) GetOrderByOrderID(orderID int) (models.Order, error) {
+	var order models.Order
+
+	row := store.db.QueryRow(context.Background(),
+		"SELECT id, user_id FROM orders WHERE id = $1", orderID)
+
+	err := row.Scan(&order.OrderID, &order.UserID)
+	if err != nil {
+		return order, err
+	}
+
+	return order, nil
 }
 
 func (store *orderStorage) GetOrdersByUserID(userID int64) ([]models.Order, error) {
