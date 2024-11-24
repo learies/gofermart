@@ -13,10 +13,6 @@ import (
 
 func (h *Handler) CreateOrder() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-			return
-		}
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
