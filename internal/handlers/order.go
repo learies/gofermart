@@ -21,21 +21,32 @@ func (h *Handler) CreateOrder() http.HandlerFunc {
 		}
 		defer r.Body.Close()
 
-		order := string(body)
-		if order == "" {
+		orderNumber := string(body)
+		if orderNumber == "" {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
 
-		OrderID, err := strconv.Atoi(order)
+		OrderID, err := strconv.Atoi(orderNumber)
 		if err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		order, err := h.order.GetOrderByOrderID(OrderID)
+		if err != nil {
+			http.Error(w, "Order not found", http.StatusNotFound)
 			return
 		}
 
 		UserID, ok := r.Context().Value("userID").(int64)
 		if !ok {
 			http.Error(w, "User is not authenticated", http.StatusUnauthorized)
+			return
+		}
+
+		if order.UserID != UserID {
+			http.Error(w, "Order does not belong to user", http.StatusConflict)
 			return
 		}
 
