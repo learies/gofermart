@@ -12,7 +12,7 @@ import (
 	"github.com/learies/gofermart/internal/services"
 )
 
-var ErrConflict = errors.New("Data conflict")
+var ErrConflict = errors.New("data conflict")
 
 type UserStorage interface {
 	CreateUser(username, password string) (int64, error)
