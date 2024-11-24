@@ -35,7 +35,7 @@ func (h *Handler) CreateOrder() http.HandlerFunc {
 			return
 		}
 
-		UserID := r.Context().Value("userID").(int)
+		UserID := r.Context().Value("userID").(int64)
 
 		newOrder := models.Order{
 			OrderID: OrderID,
@@ -60,7 +60,7 @@ func (h *Handler) GetOrders() http.HandlerFunc {
 			return
 		}
 
-		UserID := r.Context().Value("userID").(int)
+		UserID := r.Context().Value("userID").(int64)
 
 		orders, err := h.order.GetOrdersByUserID(UserID)
 		if err != nil {
