@@ -58,7 +58,7 @@ func (store *orderStorage) GetOrderByOrderID(orderID string) models.Order {
 
 func (store *orderStorage) GetOrdersByUserID(userID int64) ([]models.Order, error) {
 	rows, err := store.db.Query(context.Background(),
-		"SELECT id, user_id FROM orders WHERE user_id = $1", userID)
+		"SELECT id, status, accrual, uploaded_at, user_id FROM orders WHERE user_id = $1 ORDER BY uploaded_at DESC", userID)
 	if err != nil {
 		return nil, err
 	}
@@ -67,10 +67,14 @@ func (store *orderStorage) GetOrdersByUserID(userID int64) ([]models.Order, erro
 	var orders []models.Order
 	for rows.Next() {
 		var order models.Order
-		if err := rows.Scan(&order.OrderID, &order.UserID); err != nil {
+		if err := rows.Scan(&order.OrderID, &order.Status, &order.Accrual, &order.UploadedAt, &order.UserID); err != nil {
 			return nil, err
 		}
 		orders = append(orders, order)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return orders, nil

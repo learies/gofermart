@@ -22,6 +22,9 @@ func CreateOrdersTable(pool *pgxpool.Pool) error {
 	_, err := pool.Exec(context.Background(),
 		`CREATE TABLE IF NOT EXISTS orders (
 		id VARCHAR(255) PRIMARY KEY,
+		status VARCHAR(10) DEFAULT 'NEW' CHECK (status IN ('NEW', 'PROCESSING', 'INVALID', 'PROCESSED')),
+		accrual FLOAT DEFAULT 0.0,
+		uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		user_id INTEGER NOT NULL REFERENCES users(id)
 	)`)
 
