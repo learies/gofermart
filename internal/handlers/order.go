@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"strconv"
 
 	"github.com/learies/gofermart/internal/models"
 	"github.com/learies/gofermart/internal/storage"
@@ -27,17 +26,7 @@ func (h *Handler) CreateOrder() http.HandlerFunc {
 			return
 		}
 
-		OrderID, err := strconv.Atoi(orderNumber)
-		if err != nil {
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
-			return
-		}
-
-		order, err := h.order.GetOrderByOrderID(OrderID)
-		if err != nil {
-			http.Error(w, "Order not found", http.StatusNotFound)
-			return
-		}
+		order := h.order.GetOrderByOrderID(orderNumber)
 
 		UserID, ok := r.Context().Value("userID").(int64)
 		if !ok {
@@ -45,13 +34,15 @@ func (h *Handler) CreateOrder() http.HandlerFunc {
 			return
 		}
 
-		if order.UserID != UserID {
-			http.Error(w, "Order does not belong to user", http.StatusConflict)
-			return
+		if order.OrderID != "" {
+			if order.UserID != UserID {
+				http.Error(w, "Order does not belong to user", http.StatusConflict)
+				return
+			}
 		}
 
 		newOrder := models.Order{
-			OrderID: OrderID,
+			OrderID: orderNumber,
 			UserID:  UserID,
 		}
 

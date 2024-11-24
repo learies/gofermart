@@ -21,7 +21,7 @@ func CreateUsersTable(pool *pgxpool.Pool) error {
 func CreateOrdersTable(pool *pgxpool.Pool) error {
 	_, err := pool.Exec(context.Background(),
 		`CREATE TABLE IF NOT EXISTS orders (
-		id BIGINT PRIMARY KEY,
+		id VARCHAR(255) PRIMARY KEY,
 		user_id INTEGER NOT NULL REFERENCES users(id)
 	)`)
 

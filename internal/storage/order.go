@@ -13,7 +13,7 @@ import (
 
 type OrderStorage interface {
 	CreateOrder(order models.Order) error
-	GetOrderByOrderID(orderID int) (models.Order, error)
+	GetOrderByOrderID(orderID string) models.Order
 	GetOrdersByUserID(userID int64) ([]models.Order, error)
 }
 
@@ -32,7 +32,7 @@ func (store *orderStorage) CreateOrder(order models.Order) error {
 		"INSERT INTO orders (id, user_id) VALUES ($1, $2) RETURNING id",
 		order.OrderID, order.UserID)
 
-	var number int
+	var number string
 	err := row.Scan(&number)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -45,18 +45,15 @@ func (store *orderStorage) CreateOrder(order models.Order) error {
 	return nil
 }
 
-func (store *orderStorage) GetOrderByOrderID(orderID int) (models.Order, error) {
+func (store *orderStorage) GetOrderByOrderID(orderID string) models.Order {
 	var order models.Order
 
 	row := store.db.QueryRow(context.Background(),
 		"SELECT id, user_id FROM orders WHERE id = $1", orderID)
 
-	err := row.Scan(&order.OrderID, &order.UserID)
-	if err != nil {
-		return order, err
-	}
+	row.Scan(&order.OrderID, &order.UserID)
 
-	return order, nil
+	return order
 }
 
 func (store *orderStorage) GetOrdersByUserID(userID int64) ([]models.Order, error) {
