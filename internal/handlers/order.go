@@ -33,7 +33,11 @@ func (h *Handler) CreateOrder() http.HandlerFunc {
 			return
 		}
 
-		UserID := r.Context().Value("userID").(int64)
+		UserID, ok := r.Context().Value("userID").(int64)
+		if !ok {
+			http.Error(w, "User is not authenticated", http.StatusUnauthorized)
+			return
+		}
 
 		newOrder := models.Order{
 			OrderID: OrderID,
