@@ -81,8 +81,8 @@ func (h *Handler) LoginUser() http.HandlerFunc {
 			Path:     "/",
 		})
 
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(dbUser)
+		w.Write([]byte("Login successful"))
 	}
 }
