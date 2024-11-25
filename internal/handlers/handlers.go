@@ -8,17 +8,19 @@ import (
 )
 
 type Handler struct {
-	user  storage.UserStorage
-	auth  services.AuthService
-	jwt   services.JWTService
-	order storage.OrderStorage
+	user    storage.UserStorage
+	auth    services.AuthService
+	jwt     services.JWTService
+	order   storage.OrderStorage
+	balance storage.BalanceStorage
 }
 
 func NewHandler(dbPool *pgxpool.Pool) *Handler {
 	return &Handler{
-		user:  storage.NewPostgresStorage(dbPool),
-		auth:  services.NewAuthService(),
-		jwt:   services.NewJWTService(),
-		order: storage.NewOrderStorage(dbPool),
+		user:    storage.NewPostgresStorage(dbPool),
+		auth:    services.NewAuthService(),
+		jwt:     services.NewJWTService(),
+		order:   storage.NewOrderStorage(dbPool),
+		balance: storage.NewBalanceStorage(dbPool),
 	}
 }

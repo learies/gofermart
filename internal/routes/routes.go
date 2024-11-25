@@ -38,6 +38,7 @@ func (r *Router) Initialize(cfg *config.Config) error {
 		r.Post("/login", userHandlers.LoginUser())
 		r.Post("/orders", userHandlers.CreateOrder())
 		r.Get("/orders", userHandlers.GetOrders())
+		r.Get("/balance", userHandlers.GetBalance())
 		r.MethodNotAllowed(methodNotAllowedHandler)
 	})
 
