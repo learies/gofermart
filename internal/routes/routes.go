@@ -36,7 +36,7 @@ func (r *Router) Initialize(cfg *config.Config) error {
 	routes.Route("/api/user", func(r chi.Router) {
 		r.Post("/register", userHandlers.RegisterUser())
 		r.Post("/login", userHandlers.LoginUser())
-		r.Post("/orders", userHandlers.CreateOrder())
+		r.Post("/orders", userHandlers.CreateOrder(cfg.AccrualSystemAddress))
 		r.Get("/orders", userHandlers.GetOrders())
 		r.Get("/balance", userHandlers.GetBalance())
 		r.MethodNotAllowed(methodNotAllowedHandler)

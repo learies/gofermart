@@ -10,7 +10,29 @@ import (
 	"github.com/learies/gofermart/internal/storage"
 )
 
-func (h *Handler) CreateOrder() http.HandlerFunc {
+func fetchAccrualInfo(AccrualSystemAddress, orderNumber string) (models.Order, error) {
+	var order models.Order
+
+	url := AccrualSystemAddress + "/api/orders/" + orderNumber
+	resp, err := http.Get(url)
+	if err != nil {
+		return order, err
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return order, err
+	}
+
+	err = json.Unmarshal(body, &order)
+	if err != nil {
+		return order, err
+	}
+
+	return order, nil
+}
+
+func (h *Handler) CreateOrder(AccrualSystemAddress string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		body, err := io.ReadAll(r.Body)
@@ -41,12 +63,26 @@ func (h *Handler) CreateOrder() http.HandlerFunc {
 			}
 		}
 
-		newOrder := models.Order{
-			OrderID: orderNumber,
-			UserID:  UserID,
+		orderChan := make(chan models.Order)
+		go func(orderNumber string) {
+			newOrder, err := fetchAccrualInfo(AccrualSystemAddress, orderNumber)
+			if err != nil {
+				close(orderChan)
+				return
+			}
+			orderChan <- newOrder
+			close(orderChan)
+		}(orderNumber)
+
+		orderInfoChan, ok := <-orderChan
+		if !ok {
+			http.Error(w, "Error fetching order information", http.StatusInternalServerError)
+			return
 		}
 
-		err = h.order.CreateOrder(newOrder)
+		orderInfoChan.UserID = UserID
+
+		err = h.order.CreateOrder(orderInfoChan)
 		if err != nil {
 			if errors.Is(err, storage.ErrConflict) {
 				http.Error(w, "We already have that order", http.StatusOK)
