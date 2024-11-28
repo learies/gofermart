@@ -26,9 +26,9 @@ func (store *balanceStorage) GetBalanceByUserID(userID int64) (*models.Balance, 
 	var balance models.Balance
 
 	row := store.db.QueryRow(context.Background(),
-		"SELECT user_id, current FROM balance WHERE user_id = $1", userID)
+		"SELECT SUM(accrual) - SUM(withdrawn) AS accrual, SUM(withdrawn) withdrawn FROM orders WHERE user_id = $1", userID)
 
-	row.Scan(&balance.UserID, &balance.Current)
+	row.Scan(&balance.Current, &balance.Withdraw)
 
 	return &balance, nil
 }

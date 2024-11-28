@@ -16,7 +16,7 @@ import (
 type OrderStorage interface {
 	CreateOrder(order models.Order) error
 	GetOrderByOrderID(orderID string) models.Order
-	GetOrdersByUserID(userID int64) ([]models.Order, error)
+	GetOrdersByUserID(userID int64) ([]models.OrderResponse, error)
 }
 
 type orderStorage struct {
@@ -35,8 +35,8 @@ func (store *orderStorage) CreateOrder(order models.Order) error {
 	}
 
 	row := store.db.QueryRow(context.Background(),
-		"INSERT INTO orders (id, status, accrual, uploaded_at, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING id",
-		order.OrderID, order.Status, order.Accrual, order.UploadedAt, order.UserID)
+		"INSERT INTO orders (id, status, accrual, withdrawn, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+		order.OrderID, order.Status, order.Accrual, order.Withdrawn, order.UserID)
 
 	var number string
 	err := row.Scan(&number)
@@ -63,18 +63,18 @@ func (store *orderStorage) GetOrderByOrderID(orderID string) models.Order {
 	return order
 }
 
-func (store *orderStorage) GetOrdersByUserID(userID int64) ([]models.Order, error) {
+func (store *orderStorage) GetOrdersByUserID(userID int64) ([]models.OrderResponse, error) {
 	rows, err := store.db.Query(context.Background(),
-		"SELECT id, status, accrual, uploaded_at, user_id FROM orders WHERE user_id = $1 ORDER BY uploaded_at DESC", userID)
+		"SELECT id, status, accrual, withdrawn, uploaded_at, user_id FROM orders WHERE user_id = $1 ORDER BY uploaded_at DESC", userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var orders []models.Order
+	var orders []models.OrderResponse
 	for rows.Next() {
-		var order models.Order
-		if err := rows.Scan(&order.OrderID, &order.Status, &order.Accrual, &order.UploadedAt, &order.UserID); err != nil {
+		var order models.OrderResponse
+		if err := rows.Scan(&order.OrderID, &order.Status, &order.Accrual, &order.Withdrawn, &order.UploadedAt, &order.UserID); err != nil {
 			return nil, err
 		}
 		orders = append(orders, order)

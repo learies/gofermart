@@ -24,6 +24,7 @@ func CreateOrdersTable(pool *pgxpool.Pool) error {
 		id VARCHAR(255) PRIMARY KEY,
 		status VARCHAR(10) DEFAULT 'NEW' CHECK (status IN ('NEW', 'PROCESSING', 'INVALID', 'PROCESSED')),
 		accrual NUMERIC(10, 2) DEFAULT 0.0,
+		withdrawn NUMERIC(10, 2) DEFAULT 0.0,
 		uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		user_id INTEGER NOT NULL REFERENCES users(id)
 	)`)

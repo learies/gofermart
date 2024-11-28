@@ -1,6 +1,12 @@
 package models
 
 type Balance struct {
-	UserID  int64  `db:"user_id" json:"-"`
-	Current uint32 `db:"current" json:"current"`
+	Current  float32 `db:"current" json:"current"`
+	Withdraw float32 `db:"withdrawn" json:"withdrawn"`
+}
+
+type Withdraw struct {
+	UserID   int64   `json:"-"`
+	OrderID  string  `json:"order"`
+	Withdraw float32 `json:"sum"`
 }

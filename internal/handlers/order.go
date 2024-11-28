@@ -100,10 +100,6 @@ func (h *Handler) CreateOrder(AccrualSystemAddress string) http.HandlerFunc {
 
 func (h *Handler) GetOrders() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-			return
-		}
 
 		UserID, ok := r.Context().Value("userID").(int64)
 		if !ok {
@@ -125,5 +121,56 @@ func (h *Handler) GetOrders() http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(orders)
+	}
+}
+
+func (h *Handler) Withdraw(AccrualSystemAddress string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var withdraw models.Withdraw
+
+		if err := json.NewDecoder(r.Body).Decode(&withdraw); err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		UserID, ok := r.Context().Value("userID").(int64)
+		if !ok {
+			http.Error(w, "User is not authenticated", http.StatusUnauthorized)
+			return
+		}
+
+		orderChan := make(chan models.Order)
+		go func(orderNumber string) {
+			newOrder, err := fetchAccrualInfo(AccrualSystemAddress, orderNumber)
+			if err != nil {
+				close(orderChan)
+				return
+			}
+			orderChan <- newOrder
+			close(orderChan)
+		}(withdraw.OrderID)
+
+		orderInfo, ok := <-orderChan
+		if !ok {
+			http.Error(w, "Error fetching order information", http.StatusInternalServerError)
+			return
+		}
+
+		orderInfo.UserID = UserID
+		orderInfo.Withdrawn = withdraw.Withdraw
+
+		err := h.order.CreateOrder(orderInfo)
+		if err != nil {
+			if errors.Is(err, storage.ErrConflict) {
+				http.Error(w, "We already have that order", http.StatusOK)
+				return
+			}
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusAccepted)
+		w.Write([]byte("Withdrawal request has been accepted for processing"))
 	}
 }
