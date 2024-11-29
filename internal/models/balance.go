@@ -5,8 +5,7 @@ type Balance struct {
 	Withdraw float32 `db:"withdrawn" json:"withdrawn"`
 }
 
-type Withdraw struct {
-	UserID   int64   `json:"-"`
-	OrderID  string  `json:"order"`
-	Withdraw float32 `json:"sum"`
+type WithdrawRequest struct {
+	OrderNumber  string  `json:"order"`
+	SumWithdrawn float32 `json:"sum"`
 }

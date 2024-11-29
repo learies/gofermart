@@ -126,7 +126,7 @@ func (h *Handler) GetOrders() http.HandlerFunc {
 
 func (h *Handler) Withdraw(AccrualSystemAddress string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var withdraw models.Withdraw
+		var withdraw models.WithdrawRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&withdraw); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -139,6 +139,16 @@ func (h *Handler) Withdraw(AccrualSystemAddress string) http.HandlerFunc {
 			return
 		}
 
+		err := h.balance.CheckBalanceWithdrawal(UserID, withdraw.SumWithdrawn)
+		if err != nil {
+			if errors.Is(err, storage.ErrInsufficientFunds) {
+				http.Error(w, "Withdrawal amount exceeds the order accrual", http.StatusPaymentRequired)
+				return
+			}
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
 		orderChan := make(chan models.Order)
 		go func(orderNumber string) {
 			newOrder, err := fetchAccrualInfo(AccrualSystemAddress, orderNumber)
@@ -148,7 +158,7 @@ func (h *Handler) Withdraw(AccrualSystemAddress string) http.HandlerFunc {
 			}
 			orderChan <- newOrder
 			close(orderChan)
-		}(withdraw.OrderID)
+		}(withdraw.OrderNumber)
 
 		orderInfo, ok := <-orderChan
 		if !ok {
@@ -157,9 +167,9 @@ func (h *Handler) Withdraw(AccrualSystemAddress string) http.HandlerFunc {
 		}
 
 		orderInfo.UserID = UserID
-		orderInfo.Withdrawn = withdraw.Withdraw
+		orderInfo.Withdrawn = withdraw.SumWithdrawn
 
-		err := h.order.CreateOrder(orderInfo)
+		err = h.order.CreateOrder(orderInfo)
 		if err != nil {
 			if errors.Is(err, storage.ErrConflict) {
 				http.Error(w, "We already have that order", http.StatusOK)

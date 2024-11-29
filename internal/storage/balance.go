@@ -2,14 +2,18 @@ package storage
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/learies/gofermart/internal/models"
 )
 
+var ErrInsufficientFunds = errors.New("insufficient funds")
+
 type BalanceStorage interface {
 	GetBalanceByUserID(userID int64) (*models.Balance, error)
+	CheckBalanceWithdrawal(userID int64, amount float32) error
 }
 
 type balanceStorage struct {
@@ -31,4 +35,18 @@ func (store *balanceStorage) GetBalanceByUserID(userID int64) (*models.Balance, 
 	row.Scan(&balance.Current, &balance.Withdraw)
 
 	return &balance, nil
+}
+
+func (store *balanceStorage) CheckBalanceWithdrawal(userID int64, amount float32) error {
+
+	balance, err := store.GetBalanceByUserID(userID)
+	if err != nil {
+		return err
+	}
+
+	if balance.Current < amount {
+		return ErrInsufficientFunds
+	}
+
+	return nil
 }
