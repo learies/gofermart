@@ -58,7 +58,14 @@ func (store *orderStorage) GetOrderByOrderID(orderID string) models.Order {
 	row := store.db.QueryRow(context.Background(),
 		"SELECT id, user_id FROM orders WHERE id = $1", orderID)
 
-	row.Scan(&order.OrderID, &order.UserID)
+	err := row.Scan(&order.OrderID, &order.UserID)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.NoData {
+			return models.Order{}
+		}
+		return models.Order{}
+	}
 
 	return order
 }
