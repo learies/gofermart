@@ -12,7 +12,7 @@ type WithdrawRequest struct {
 	SumWithdrawn float32 `json:"sum"`
 }
 
-type WithdrawalsResponse struct {
+type UserWithdrawal struct {
 	OrderNumber string    `json:"order"`
 	Withdrawn   float32   `json:"sum"`
 	UploadedAt  time.Time `json:"processed_at"`

@@ -15,7 +15,7 @@ var ErrInsufficientFunds = errors.New("insufficient funds")
 type BalanceStorage interface {
 	GetBalanceByUserID(userID int64) (*models.UserBalance, error)
 	CheckBalanceWithdrawal(userID int64, amount float32) error
-	GetWithdrawalsByUserID(userID int64) ([]models.WithdrawalsResponse, error)
+	GetWithdrawalsByUserID(userID int64) (*[]models.UserWithdrawal, error)
 }
 
 type balanceStorage struct {
@@ -54,8 +54,8 @@ func (store *balanceStorage) CheckBalanceWithdrawal(userID int64, amount float32
 	return nil
 }
 
-func (store *balanceStorage) GetWithdrawalsByUserID(userID int64) ([]models.WithdrawalsResponse, error) {
-	var withdrawals []models.WithdrawalsResponse
+func (store *balanceStorage) GetWithdrawalsByUserID(userID int64) (*[]models.UserWithdrawal, error) {
+	var userWithdrawals []models.UserWithdrawal
 
 	rows, err := store.db.Query(context.Background(),
 		"SELECT id, withdrawn, uploaded_at FROM orders WHERE user_id = $1 ORDER BY uploaded_at DESC", userID)
@@ -65,14 +65,14 @@ func (store *balanceStorage) GetWithdrawalsByUserID(userID int64) ([]models.With
 	defer rows.Close()
 
 	for rows.Next() {
-		var withdrawal models.WithdrawalsResponse
-		err := rows.Scan(&withdrawal.OrderNumber, &withdrawal.Withdrawn, &withdrawal.UploadedAt)
+		var userWithdrawal models.UserWithdrawal
+		err := rows.Scan(&userWithdrawal.OrderNumber, &userWithdrawal.Withdrawn, &userWithdrawal.UploadedAt)
 		if err != nil {
 			return nil, err
 		}
 
-		withdrawals = append(withdrawals, withdrawal)
+		userWithdrawals = append(userWithdrawals, userWithdrawal)
 	}
 
-	return withdrawals, nil
+	return &userWithdrawals, nil
 }
