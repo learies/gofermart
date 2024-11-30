@@ -7,13 +7,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/learies/gofermart/internal/config/logger"
 	"github.com/learies/gofermart/internal/models"
+	"github.com/learies/gofermart/internal/services"
 	"github.com/learies/gofermart/internal/storage"
 )
 
@@ -63,27 +62,6 @@ func fetchAccrualInfo(AccrualSystemAddress, orderNumber string) (models.Order, e
 	return order, nil
 }
 
-func ValidateOrderNumber(orderNumber string) bool {
-	var sum int
-	alternate := false
-
-	for i := len(orderNumber) - 1; i >= 0; i-- {
-		digit, err := strconv.Atoi(string(orderNumber[i]))
-		if err != nil || !unicode.IsDigit(rune(orderNumber[i])) {
-			return false
-		}
-		if alternate {
-			digit *= 2
-			if digit > 9 {
-				digit -= 9
-			}
-		}
-		sum += digit
-		alternate = !alternate
-	}
-	return sum%10 == 0
-}
-
 func (h *Handler) CreateOrder(AccrualSystemAddress string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -102,7 +80,7 @@ func (h *Handler) CreateOrder(AccrualSystemAddress string) http.HandlerFunc {
 
 		order := h.order.GetOrder(orderNumber)
 
-		if !ValidateOrderNumber(orderNumber) {
+		if !services.ValidateOrderNumber(orderNumber) {
 			logger.Log.Error("Invalid order number", "order", orderNumber)
 			http.Error(w, "Invalid order number", http.StatusUnprocessableEntity)
 			return
@@ -204,7 +182,7 @@ func (h *Handler) Withdraw(AccrualSystemAddress string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var withdraw models.WithdrawRequest
 
-		if !ValidateOrderNumber(withdraw.OrderNumber) {
+		if !services.ValidateOrderNumber(withdraw.OrderNumber) {
 			http.Error(w, "Invalid order number", http.StatusUnprocessableEntity)
 			return
 		}
