@@ -32,17 +32,6 @@ func CreateOrdersTable(pool *pgxpool.Pool) error {
 	return err
 }
 
-func CreateBalanceTable(pool *pgxpool.Pool) error {
-	_, err := pool.Exec(context.Background(),
-		`CREATE TABLE IF NOT EXISTS balance (
-		id SERIAL PRIMARY KEY,
-		user_id INTEGER NOT NULL REFERENCES users(id),
-		current FLOAT NOT NULL DEFAULT 0.0
-	)`)
-
-	return err
-}
-
 func SetupDB() (*pgxpool.Pool, error) {
 	dsn := os.Getenv("DATABASE_URI")
 
@@ -62,11 +51,6 @@ func SetupDB() (*pgxpool.Pool, error) {
 	}
 
 	err = CreateOrdersTable(pool)
-	if err != nil {
-		return nil, err
-	}
-
-	err = CreateBalanceTable(pool)
 	if err != nil {
 		return nil, err
 	}
