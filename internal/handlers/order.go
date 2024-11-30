@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"unicode"
 
 	"github.com/learies/gofermart/internal/config/logger"
@@ -90,7 +91,7 @@ func (h *Handler) CreateOrder(AccrualSystemAddress string) http.HandlerFunc {
 		}
 		defer r.Body.Close()
 
-		orderNumber := string(body)
+		orderNumber := strings.TrimSpace(string(body))
 		if orderNumber == "" {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
