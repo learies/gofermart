@@ -13,7 +13,7 @@ import (
 var ErrInsufficientFunds = errors.New("insufficient funds")
 
 type BalanceStorage interface {
-	GetBalanceByUserID(userID int64) (*models.UserBalance, error)
+	GetUserBalance(userID int64) (*models.UserBalance, error)
 	CheckBalanceWithdrawal(userID int64, amount float32) error
 	GetWithdrawalsByUserID(userID int64) (*[]models.UserWithdrawal, error)
 }
@@ -28,7 +28,7 @@ func NewBalanceStorage(dbPool *pgxpool.Pool) BalanceStorage {
 	}
 }
 
-func (store *balanceStorage) GetBalanceByUserID(userID int64) (*models.UserBalance, error) {
+func (store *balanceStorage) GetUserBalance(userID int64) (*models.UserBalance, error) {
 	var userBalance models.UserBalance
 
 	row := store.db.QueryRow(context.Background(),
@@ -41,7 +41,7 @@ func (store *balanceStorage) GetBalanceByUserID(userID int64) (*models.UserBalan
 
 func (store *balanceStorage) CheckBalanceWithdrawal(userID int64, amount float32) error {
 
-	userBalance, err := store.GetBalanceByUserID(userID)
+	userBalance, err := store.GetUserBalance(userID)
 	if err != nil {
 		return err
 	}

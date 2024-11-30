@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func (h *Handler) GetBalance() http.HandlerFunc {
+func (h *Handler) GetUserBalance() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		UserID, ok := r.Context().Value("userID").(int64)
 		if !ok {
@@ -13,7 +13,7 @@ func (h *Handler) GetBalance() http.HandlerFunc {
 			return
 		}
 
-		userBalance, err := h.balance.GetBalanceByUserID(UserID)
+		userBalance, err := h.balance.GetUserBalance(UserID)
 		if err != nil {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return

@@ -38,7 +38,7 @@ func (r *Router) Initialize(cfg *config.Config) error {
 		r.Post("/login", userHandlers.LoginUser())
 		r.Post("/orders", userHandlers.CreateOrder(cfg.AccrualSystemAddress))
 		r.Get("/orders", userHandlers.GetOrders())
-		r.Get("/balance", userHandlers.GetBalance())
+		r.Get("/balance", userHandlers.GetUserBalance())
 		r.Post("/balance/withdraw", userHandlers.Withdraw(cfg.AccrualSystemAddress))
 		r.Get("/withdrawals", userHandlers.GetUserWithdrawals())
 		r.MethodNotAllowed(methodNotAllowedHandler)
