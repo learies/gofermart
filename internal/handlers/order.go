@@ -99,6 +99,7 @@ func (h *Handler) CreateOrder(AccrualSystemAddress string) http.HandlerFunc {
 		order := h.order.GetOrderByOrderID(orderNumber)
 
 		if !ValidateOrderNumber(orderNumber) {
+			logger.Log.Error("Invalid order number", "order", orderNumber)
 			http.Error(w, "Invalid order number", http.StatusUnprocessableEntity)
 			return
 		}
@@ -165,18 +166,21 @@ func (h *Handler) GetOrders() http.HandlerFunc {
 
 		UserID, ok := r.Context().Value("userID").(int64)
 		if !ok {
+			logger.Log.Error("User is not authenticated")
 			http.Error(w, "User is not authenticated", http.StatusUnauthorized)
 			return
 		}
 
 		orders, err := h.order.GetOrdersByUserID(UserID)
 		if err != nil {
+			logger.Log.Error("Failed to get orders", "error", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		if len(orders) == 0 {
-			http.Error(w, "No orders found", http.StatusAccepted)
+			logger.Log.Info("No orders found")
+			http.Error(w, "No orders found", http.StatusNoContent)
 			return
 		}
 
