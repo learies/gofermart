@@ -13,7 +13,7 @@ func (h *Handler) GetBalance() http.HandlerFunc {
 			return
 		}
 
-		balance, err := h.balance.GetBalanceByUserID(UserID)
+		userBalance, err := h.balance.GetBalanceByUserID(UserID)
 		if err != nil {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
@@ -21,7 +21,7 @@ func (h *Handler) GetBalance() http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(balance)
+		json.NewEncoder(w).Encode(userBalance)
 	}
 }
 

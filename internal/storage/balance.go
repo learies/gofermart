@@ -13,7 +13,7 @@ import (
 var ErrInsufficientFunds = errors.New("insufficient funds")
 
 type BalanceStorage interface {
-	GetBalanceByUserID(userID int64) (*models.Balance, error)
+	GetBalanceByUserID(userID int64) (*models.UserBalance, error)
 	CheckBalanceWithdrawal(userID int64, amount float32) error
 	GetWithdrawalsByUserID(userID int64) ([]models.WithdrawalsResponse, error)
 }
@@ -28,26 +28,26 @@ func NewBalanceStorage(dbPool *pgxpool.Pool) BalanceStorage {
 	}
 }
 
-func (store *balanceStorage) GetBalanceByUserID(userID int64) (*models.Balance, error) {
-	var balance models.Balance
+func (store *balanceStorage) GetBalanceByUserID(userID int64) (*models.UserBalance, error) {
+	var userBalance models.UserBalance
 
 	row := store.db.QueryRow(context.Background(),
 		"SELECT SUM(accrual) - SUM(withdrawn) AS accrual, SUM(withdrawn) withdrawn FROM orders WHERE user_id = $1", userID)
 
-	row.Scan(&balance.Current, &balance.Withdraw)
+	row.Scan(&userBalance.Current, &userBalance.Withdraw)
 
-	return &balance, nil
+	return &userBalance, nil
 }
 
 func (store *balanceStorage) CheckBalanceWithdrawal(userID int64, amount float32) error {
 
-	balance, err := store.GetBalanceByUserID(userID)
+	userBalance, err := store.GetBalanceByUserID(userID)
 	if err != nil {
 		return err
 	}
 
-	if balance.Current < 0 {
-		logger.Log.Error("Insufficient funds", "balance", balance.Current, "withdrawal", amount)
+	if userBalance.Current < 0 {
+		logger.Log.Error("Insufficient funds", "balance", userBalance.Current, "withdrawal", amount)
 		return ErrInsufficientFunds
 	}
 
