@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/learies/gofermart/internal/config/logger"
@@ -97,7 +99,7 @@ func (h *Handler) CreateOrder(AccrualSystemAddress string) http.HandlerFunc {
 			return
 		}
 
-		order := h.order.GetOrderByOrderID(orderNumber)
+		order := h.order.GetOrder(orderNumber)
 
 		if !ValidateOrderNumber(orderNumber) {
 			logger.Log.Error("Invalid order number", "order", orderNumber)
@@ -162,32 +164,34 @@ func (h *Handler) CreateOrder(AccrualSystemAddress string) http.HandlerFunc {
 	}
 }
 
-func (h *Handler) GetOrders() http.HandlerFunc {
+func (h *Handler) GetUserOrders() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		defer cancel()
 
-		UserID, ok := r.Context().Value("userID").(int64)
+		UserID, ok := ctx.Value("userID").(int64)
 		if !ok {
 			logger.Log.Error("User is not authenticated")
 			http.Error(w, "User is not authenticated", http.StatusUnauthorized)
 			return
 		}
 
-		orders, err := h.order.GetOrdersByUserID(UserID)
+		userOrders, err := h.order.GetUserOrders(UserID)
 		if err != nil {
-			logger.Log.Error("Failed to get orders", "error", err)
+			logger.Log.Error("Failed to get user orders", "error", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		if len(orders) == 0 {
-			logger.Log.Info("No orders found")
-			http.Error(w, "No orders found", http.StatusNoContent)
+		if len(*userOrders) == 0 {
+			logger.Log.Info("No user orders found")
+			http.Error(w, "No user orders found", http.StatusNoContent)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(orders)
+		json.NewEncoder(w).Encode(*userOrders)
 	}
 }
 

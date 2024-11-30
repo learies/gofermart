@@ -16,5 +16,4 @@ type OrderResponse struct {
 	Accrual    float32   `json:"accrual,omitempty"`
 	Withdrawn  float32   `json:"sum,omitempty"`
 	UploadedAt time.Time `json:"uploaded_at"`
-	UserID     int64     `db:"user_id" json:"-"`
 }

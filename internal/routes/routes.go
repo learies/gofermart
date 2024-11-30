@@ -37,7 +37,7 @@ func (r *Router) Initialize(cfg *config.Config) error {
 		r.Post("/register", userHandlers.RegisterUser())
 		r.Post("/login", userHandlers.LoginUser())
 		r.Post("/orders", userHandlers.CreateOrder(cfg.AccrualSystemAddress))
-		r.Get("/orders", userHandlers.GetOrders())
+		r.Get("/orders", userHandlers.GetUserOrders())
 		r.Get("/balance", userHandlers.GetUserBalance())
 		r.Post("/balance/withdraw", userHandlers.Withdraw(cfg.AccrualSystemAddress))
 		r.Get("/withdrawals", userHandlers.GetUserWithdrawals())

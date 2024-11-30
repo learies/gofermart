@@ -15,8 +15,8 @@ import (
 
 type OrderStorage interface {
 	CreateOrder(order models.Order) error
-	GetOrderByOrderID(orderID string) models.Order
-	GetOrdersByUserID(userID int64) ([]models.OrderResponse, error)
+	GetOrder(orderID string) *models.Order
+	GetUserOrders(userID int64) (*[]models.OrderResponse, error)
 }
 
 type orderStorage struct {
@@ -51,7 +51,7 @@ func (store *orderStorage) CreateOrder(order models.Order) error {
 	return nil
 }
 
-func (store *orderStorage) GetOrderByOrderID(orderID string) models.Order {
+func (store *orderStorage) GetOrder(orderID string) *models.Order {
 	var order models.Order
 
 	row := store.db.QueryRow(context.Background(),
@@ -61,17 +61,19 @@ func (store *orderStorage) GetOrderByOrderID(orderID string) models.Order {
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.NoData {
-			return models.Order{}
+			logger.Log.Warn("Order not found", "orderID", orderID)
+			return &order
 		}
-		return models.Order{}
+		logger.Log.Error("Error while scanning row", "error", err)
+		return &order
 	}
 
-	return order
+	return &order
 }
 
-func (store *orderStorage) GetOrdersByUserID(userID int64) ([]models.OrderResponse, error) {
+func (store *orderStorage) GetUserOrders(userID int64) (*[]models.OrderResponse, error) {
 	rows, err := store.db.Query(context.Background(),
-		"SELECT id, status, accrual, withdrawn, uploaded_at, user_id FROM orders WHERE user_id = $1 ORDER BY uploaded_at DESC", userID)
+		"SELECT id, status, accrual, uploaded_at FROM orders WHERE user_id = $1 ORDER BY uploaded_at DESC", userID)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +82,8 @@ func (store *orderStorage) GetOrdersByUserID(userID int64) ([]models.OrderRespon
 	var orders []models.OrderResponse
 	for rows.Next() {
 		var order models.OrderResponse
-		if err := rows.Scan(&order.OrderID, &order.Status, &order.Accrual, &order.Withdrawn, &order.UploadedAt, &order.UserID); err != nil {
+		if err := rows.Scan(&order.OrderID, &order.Status, &order.Accrual, &order.UploadedAt); err != nil {
+			logger.Log.Error("Error while scanning row", "error", err)
 			return nil, err
 		}
 		orders = append(orders, order)
@@ -91,5 +94,5 @@ func (store *orderStorage) GetOrdersByUserID(userID int64) ([]models.OrderRespon
 		return nil, err
 	}
 
-	return orders, nil
+	return &orders, nil
 }
