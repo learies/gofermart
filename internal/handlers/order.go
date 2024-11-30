@@ -117,25 +117,34 @@ func (h *Handler) CreateOrder(AccrualSystemAddress string) http.HandlerFunc {
 		}
 
 		orderChan := make(chan models.Order)
+		errChan := make(chan error)
 		go func(orderNumber string) {
+			defer close(orderChan)
+			defer close(errChan)
 			newOrder, err := fetchAccrualInfo(AccrualSystemAddress, orderNumber)
 			if err != nil {
-				close(orderChan)
+				errChan <- err
 				return
 			}
 			orderChan <- newOrder
-			close(orderChan)
 		}(orderNumber)
 
-		orderInfoChan, ok := <-orderChan
-		if !ok {
-			http.Error(w, "Error fetching order information", http.StatusInternalServerError)
-			return
+		orderInfo := models.Order{}
+
+		select {
+		case newOrder := <-orderChan:
+			orderInfo = newOrder
+			orderInfo.OrderID = orderNumber
+			orderInfo.Status = "NEW"
+			orderInfo.UserID = UserID
+		case err := <-errChan:
+			if errors.Is(err, ErrorStatusTooManyRequests) {
+				http.Error(w, "No more than N requests per minute allowed", http.StatusTooManyRequests)
+				return
+			}
 		}
 
-		orderInfoChan.UserID = UserID
-
-		err = h.order.CreateOrder(orderInfoChan)
+		err = h.order.CreateOrder(orderInfo)
 		if err != nil {
 			if errors.Is(err, storage.ErrConflict) {
 				http.Error(w, "We already have that order", http.StatusOK)
@@ -180,6 +189,11 @@ func (h *Handler) GetOrders() http.HandlerFunc {
 func (h *Handler) Withdraw(AccrualSystemAddress string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var withdraw models.WithdrawRequest
+
+		if !ValidateOrderNumber(withdraw.OrderNumber) {
+			http.Error(w, "Invalid order number", http.StatusUnprocessableEntity)
+			return
+		}
 
 		// Декодирование тела запроса
 		if err := json.NewDecoder(r.Body).Decode(&withdraw); err != nil {
