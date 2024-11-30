@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/learies/gofermart/internal/config/logger"
 	"github.com/learies/gofermart/internal/models"
 )
 
@@ -45,7 +46,8 @@ func (store *balanceStorage) CheckBalanceWithdrawal(userID int64, amount float32
 		return err
 	}
 
-	if balance.Current < amount {
+	if balance.Current < 0 {
+		logger.Log.Error("Insufficient funds", "balance", balance.Current, "withdrawal", amount)
 		return ErrInsufficientFunds
 	}
 

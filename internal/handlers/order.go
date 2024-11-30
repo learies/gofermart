@@ -3,34 +3,59 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"unicode"
 
+	"github.com/learies/gofermart/internal/config/logger"
 	"github.com/learies/gofermart/internal/models"
 	"github.com/learies/gofermart/internal/storage"
 )
 
+var ErrorStatusTooManyRequests = errors.New("no more than N requests per minute allowed")
+
 func fetchAccrualInfo(AccrualSystemAddress, orderNumber string) (models.Order, error) {
 	var order models.Order
 
-	url := AccrualSystemAddress + "/api/orders/" + orderNumber
+	url := fmt.Sprintf("%s/api/orders/%s", AccrualSystemAddress, orderNumber)
 	resp, err := http.Get(url)
 	if err != nil {
-		return order, err
+		logger.Log.Error("Failed to fetch order", "error", err)
+		return order, fmt.Errorf("failed to fetch order: %w", err)
+	}
+	defer resp.Body.Close()
+
+	logger.Log.Info("Fetched order", "url", url)
+
+	if resp.StatusCode == http.StatusNoContent {
+		logger.Log.Info("Order not found")
+		return order, nil
+	}
+
+	if resp.StatusCode == http.StatusTooManyRequests {
+		logger.Log.Info("No more than N requests per minute allowed")
+		return order, ErrorStatusTooManyRequests
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		logger.Log.Error("Unexpected status code", "status", resp.StatusCode)
+		return order, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return order, err
+		logger.Log.Error("Failed to read response body", "error", err)
+		return order, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	err = json.Unmarshal(body, &order)
-	if err != nil {
-		return order, err
+	if err := json.Unmarshal(body, &order); err != nil {
+		logger.Log.Error("Failed to unmarshal order", "error", err)
+		return order, fmt.Errorf("failed to unmarshal order: %w", err)
 	}
 
+	logger.Log.Info("Unmarshaled order", "order", order)
 	return order, nil
 }
 
@@ -156,49 +181,53 @@ func (h *Handler) Withdraw(AccrualSystemAddress string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var withdraw models.WithdrawRequest
 
+		// Декодирование тела запроса
 		if err := json.NewDecoder(r.Body).Decode(&withdraw); err != nil {
+			logger.Log.Error("Failed to decode request body", "error", err)
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
 
+		// Проверка аутентификации пользователя
 		UserID, ok := r.Context().Value("userID").(int64)
 		if !ok {
+			logger.Log.Error("User is not authenticated")
 			http.Error(w, "User is not authenticated", http.StatusUnauthorized)
 			return
 		}
 
-		err := h.balance.CheckBalanceWithdrawal(UserID, withdraw.SumWithdrawn)
-		if err != nil {
-			if errors.Is(err, storage.ErrInsufficientFunds) {
-				http.Error(w, "Withdrawal amount exceeds the order accrual", http.StatusPaymentRequired)
-				return
-			}
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-			return
-		}
-
+		// Получение информации о заказе в отдельной горутине
 		orderChan := make(chan models.Order)
+		errChan := make(chan error)
 		go func(orderNumber string) {
+			defer close(orderChan)
+			defer close(errChan)
 			newOrder, err := fetchAccrualInfo(AccrualSystemAddress, orderNumber)
 			if err != nil {
-				close(orderChan)
+				errChan <- err
 				return
 			}
 			orderChan <- newOrder
-			close(orderChan)
 		}(withdraw.OrderNumber)
 
-		orderInfo, ok := <-orderChan
-		if !ok {
-			http.Error(w, "Error fetching order information", http.StatusInternalServerError)
-			return
+		orderInfo := models.Order{}
+
+		select {
+		case newOrder := <-orderChan:
+			orderInfo = newOrder
+			orderInfo.OrderID = withdraw.OrderNumber
+			orderInfo.Withdrawn = withdraw.SumWithdrawn
+			orderInfo.Status = "NEW"
+			orderInfo.UserID = UserID
+		case err := <-errChan:
+			if errors.Is(err, ErrorStatusTooManyRequests) {
+				http.Error(w, "No more than N requests per minute allowed", http.StatusTooManyRequests)
+				return
+			}
 		}
 
-		orderInfo.UserID = UserID
-		orderInfo.Withdrawn = withdraw.SumWithdrawn
-
-		err = h.order.CreateOrder(orderInfo)
-		if err != nil {
+		// Создание нового заказа
+		if err := h.order.CreateOrder(orderInfo); err != nil {
 			if errors.Is(err, storage.ErrConflict) {
 				http.Error(w, "We already have that order", http.StatusOK)
 				return
@@ -207,8 +236,18 @@ func (h *Handler) Withdraw(AccrualSystemAddress string) http.HandlerFunc {
 			return
 		}
 
+		// Проверка возможности снятия средств с баланса
+		if err := h.balance.CheckBalanceWithdrawal(UserID, withdraw.SumWithdrawn); err != nil {
+			if errors.Is(err, storage.ErrInsufficientFunds) {
+				http.Error(w, "Withdrawal amount exceeds the order accrual", http.StatusPaymentRequired)
+				return
+			}
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		// Установка заголовков и ответ клиенту
 		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusAccepted)
-		w.Write([]byte("Withdrawal request has been accepted for processing"))
+		w.WriteHeader(http.StatusOK)
 	}
 }

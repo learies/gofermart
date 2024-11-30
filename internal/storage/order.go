@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/learies/gofermart/internal/config/logger"
 	"github.com/learies/gofermart/internal/models"
 )
 
@@ -41,14 +41,13 @@ func (store *orderStorage) CreateOrder(order models.Order) error {
 	var number string
 	err := row.Scan(&number)
 	if err != nil {
-		log.Println(err.Error())
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			err = ErrConflict
 		}
 		return err
 	}
-
+	logger.Log.Info("Order created successfully", "order", order)
 	return nil
 }
 
