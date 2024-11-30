@@ -16,7 +16,7 @@ import (
 type OrderStorage interface {
 	CreateOrder(order models.Order) error
 	GetOrder(orderID string) *models.Order
-	GetUserOrders(userID int64) (*[]models.OrderResponse, error)
+	GetUserOrders(ctx context.Context, userID int64) (*[]models.OrderResponse, error)
 }
 
 type orderStorage struct {
@@ -71,8 +71,8 @@ func (store *orderStorage) GetOrder(orderID string) *models.Order {
 	return &order
 }
 
-func (store *orderStorage) GetUserOrders(userID int64) (*[]models.OrderResponse, error) {
-	rows, err := store.db.Query(context.Background(),
+func (store *orderStorage) GetUserOrders(ctx context.Context, userID int64) (*[]models.OrderResponse, error) {
+	rows, err := store.db.Query(ctx,
 		"SELECT id, status, accrual, uploaded_at FROM orders WHERE user_id = $1 ORDER BY uploaded_at DESC", userID)
 	if err != nil {
 		return nil, err
@@ -88,9 +88,10 @@ func (store *orderStorage) GetUserOrders(userID int64) (*[]models.OrderResponse,
 		}
 		orders = append(orders, order)
 	}
+	logger.Log.Info("User orders retrieved successfully", "orders", orders)
 
 	if err := rows.Err(); err != nil {
-		logger.Log.Error("Error while scanning rows", "error", err)
+		logger.Log.Error("GetUserOrders: Error while scanning rows", "error", err)
 		return nil, err
 	}
 

@@ -18,6 +18,7 @@ import (
 )
 
 var ErrorStatusTooManyRequests = errors.New("no more than N requests per minute allowed")
+var ErrorOrderNotFound = errors.New("order not found")
 
 func fetchAccrualInfo(AccrualSystemAddress, orderNumber string) (models.Order, error) {
 	var order models.Order
@@ -34,7 +35,7 @@ func fetchAccrualInfo(AccrualSystemAddress, orderNumber string) (models.Order, e
 
 	if resp.StatusCode == http.StatusNoContent {
 		logger.Log.Info("Order not found")
-		return order, nil
+		return order, ErrorOrderNotFound
 	}
 
 	if resp.StatusCode == http.StatusTooManyRequests {
@@ -139,12 +140,16 @@ func (h *Handler) CreateOrder(AccrualSystemAddress string) http.HandlerFunc {
 		case newOrder := <-orderChan:
 			orderInfo = newOrder
 			orderInfo.OrderID = orderNumber
-			orderInfo.Status = "NEW"
 			orderInfo.UserID = UserID
 		case err := <-errChan:
 			if errors.Is(err, ErrorStatusTooManyRequests) {
 				http.Error(w, "No more than N requests per minute allowed", http.StatusTooManyRequests)
 				return
+			}
+			if errors.Is(err, ErrorOrderNotFound) {
+				orderInfo.OrderID = orderNumber
+				orderInfo.UserID = UserID
+				orderInfo.Status = "NEW"
 			}
 		}
 
@@ -176,7 +181,7 @@ func (h *Handler) GetUserOrders() http.HandlerFunc {
 			return
 		}
 
-		userOrders, err := h.order.GetUserOrders(UserID)
+		userOrders, err := h.order.GetUserOrders(ctx, UserID)
 		if err != nil {
 			logger.Log.Error("Failed to get user orders", "error", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -240,12 +245,17 @@ func (h *Handler) Withdraw(AccrualSystemAddress string) http.HandlerFunc {
 			orderInfo = newOrder
 			orderInfo.OrderID = withdraw.OrderNumber
 			orderInfo.Withdrawn = withdraw.SumWithdrawn
-			orderInfo.Status = "NEW"
 			orderInfo.UserID = UserID
 		case err := <-errChan:
 			if errors.Is(err, ErrorStatusTooManyRequests) {
 				http.Error(w, "No more than N requests per minute allowed", http.StatusTooManyRequests)
 				return
+			}
+			if errors.Is(err, ErrorOrderNotFound) {
+				orderInfo.OrderID = withdraw.OrderNumber
+				orderInfo.UserID = UserID
+				orderInfo.Withdrawn = withdraw.SumWithdrawn
+				orderInfo.Status = "NEW"
 			}
 		}
 
