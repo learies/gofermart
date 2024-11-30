@@ -87,6 +87,7 @@ func (store *orderStorage) GetOrdersByUserID(userID int64) ([]models.OrderRespon
 	}
 
 	if err := rows.Err(); err != nil {
+		logger.Log.Error("Error while scanning rows", "error", err)
 		return nil, err
 	}
 
