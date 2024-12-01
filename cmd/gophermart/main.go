@@ -10,6 +10,9 @@ func main() {
 	cfg := config.NewConfig()
 
 	err := logger.NewLogger("info")
+	if err != nil {
+		logger.Log.Error("Could not create logger", "error", err)
+	}
 
 	application, err := app.NewApp(cfg)
 	if err != nil {
