@@ -3,11 +3,13 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/learies/gofermart/internal/constants"
 )
 
 func (h *Handler) GetUserBalance() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		UserID, ok := r.Context().Value("userID").(int64)
+		UserID, ok := r.Context().Value(constants.UserIDKey).(int64)
 		if !ok {
 			http.Error(w, "User is not authenticated", http.StatusUnauthorized)
 			return
@@ -28,7 +30,7 @@ func (h *Handler) GetUserBalance() http.HandlerFunc {
 func (h *Handler) GetUserWithdrawals() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		UserID, ok := r.Context().Value("userID").(int64)
+		UserID, ok := r.Context().Value(constants.UserIDKey).(int64)
 		if !ok {
 			http.Error(w, "User is not authenticated", http.StatusUnauthorized)
 			return

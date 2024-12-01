@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/learies/gofermart/internal/config/logger"
+	"github.com/learies/gofermart/internal/constants"
 	"github.com/learies/gofermart/internal/services"
 )
 
@@ -26,7 +27,7 @@ func JWTMiddleware(next http.Handler) http.Handler {
 				http.Error(w, "Forbidden", http.StatusForbidden)
 				return
 			}
-			ctx := context.WithValue(r.Context(), "userID", userID)
+			ctx := context.WithValue(r.Context(), constants.UserIDKey, userID)
 			r = r.WithContext(ctx)
 		}
 

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/learies/gofermart/internal/config/logger"
+	"github.com/learies/gofermart/internal/constants"
 	"github.com/learies/gofermart/internal/models"
 	"github.com/learies/gofermart/internal/services"
 	"github.com/learies/gofermart/internal/storage"
@@ -39,7 +40,7 @@ func (h *Handler) CreateOrder(AccrualSystemAddress string) http.HandlerFunc {
 			return
 		}
 
-		UserID, ok := r.Context().Value("userID").(int64)
+		UserID, ok := r.Context().Value(constants.UserIDKey).(int64)
 		if !ok {
 			http.Error(w, "User is not authenticated", http.StatusUnauthorized)
 			return
@@ -94,7 +95,7 @@ func (h *Handler) GetUserOrders() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 		defer cancel()
 
-		UserID, ok := ctx.Value("userID").(int64)
+		UserID, ok := ctx.Value(constants.UserIDKey).(int64)
 		if !ok {
 			logger.Log.Error("User is not authenticated")
 			http.Error(w, "User is not authenticated", http.StatusUnauthorized)
@@ -137,7 +138,7 @@ func (h *Handler) Withdraw(AccrualSystemAddress string) http.HandlerFunc {
 		}
 
 		// Проверка аутентификации пользователя
-		UserID, ok := r.Context().Value("userID").(int64)
+		UserID, ok := r.Context().Value(constants.UserIDKey).(int64)
 		if !ok {
 			logger.Log.Error("User is not authenticated")
 			http.Error(w, "User is not authenticated", http.StatusUnauthorized)
