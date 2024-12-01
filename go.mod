@@ -1,6 +1,6 @@
 module github.com/learies/gofermart
 
-go 1.23.2
+go 1.22.5
 
 require (
 	github.com/go-chi/chi v1.5.5
