@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -15,52 +14,6 @@ import (
 	"github.com/learies/gofermart/internal/services"
 	"github.com/learies/gofermart/internal/storage"
 )
-
-var ErrorStatusTooManyRequests = errors.New("no more than N requests per minute allowed")
-var ErrorOrderNotFound = errors.New("order not found")
-
-func fetchAccrualInfo(AccrualSystemAddress, orderNumber string) (models.Order, error) {
-	var order models.Order
-
-	url := fmt.Sprintf("%s/api/orders/%s", AccrualSystemAddress, orderNumber)
-	resp, err := http.Get(url)
-	if err != nil {
-		logger.Log.Error("Failed to fetch order", "error", err)
-		return order, fmt.Errorf("failed to fetch order: %w", err)
-	}
-	defer resp.Body.Close()
-
-	logger.Log.Info("Fetched order", "url", url)
-
-	if resp.StatusCode == http.StatusNoContent {
-		logger.Log.Info("Order not found")
-		return order, ErrorOrderNotFound
-	}
-
-	if resp.StatusCode == http.StatusTooManyRequests {
-		logger.Log.Info("No more than N requests per minute allowed")
-		return order, ErrorStatusTooManyRequests
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		logger.Log.Error("Unexpected status code", "status", resp.StatusCode)
-		return order, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		logger.Log.Error("Failed to read response body", "error", err)
-		return order, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	if err := json.Unmarshal(body, &order); err != nil {
-		logger.Log.Error("Failed to unmarshal order", "error", err)
-		return order, fmt.Errorf("failed to unmarshal order: %w", err)
-	}
-
-	logger.Log.Info("Unmarshaled order", "order", order)
-	return order, nil
-}
 
 func (h *Handler) CreateOrder(AccrualSystemAddress string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -99,18 +52,7 @@ func (h *Handler) CreateOrder(AccrualSystemAddress string) http.HandlerFunc {
 			}
 		}
 
-		orderChan := make(chan models.Order)
-		errChan := make(chan error)
-		go func(orderNumber string) {
-			defer close(orderChan)
-			defer close(errChan)
-			newOrder, err := fetchAccrualInfo(AccrualSystemAddress, orderNumber)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			orderChan <- newOrder
-		}(orderNumber)
+		orderChan, errChan := h.accrual.FetchOrder(AccrualSystemAddress, orderNumber)
 
 		orderInfo := models.Order{}
 
@@ -120,11 +62,11 @@ func (h *Handler) CreateOrder(AccrualSystemAddress string) http.HandlerFunc {
 			orderInfo.OrderID = orderNumber
 			orderInfo.UserID = UserID
 		case err := <-errChan:
-			if errors.Is(err, ErrorStatusTooManyRequests) {
+			if errors.Is(err, services.ErrorStatusTooManyRequests) {
 				http.Error(w, "No more than N requests per minute allowed", http.StatusTooManyRequests)
 				return
 			}
-			if errors.Is(err, ErrorOrderNotFound) {
+			if errors.Is(err, services.ErrorOrderNotFound) {
 				orderInfo.OrderID = orderNumber
 				orderInfo.UserID = UserID
 				orderInfo.Status = "NEW"
@@ -203,18 +145,7 @@ func (h *Handler) Withdraw(AccrualSystemAddress string) http.HandlerFunc {
 		}
 
 		// Получение информации о заказе в отдельной горутине
-		orderChan := make(chan models.Order)
-		errChan := make(chan error)
-		go func(orderNumber string) {
-			defer close(orderChan)
-			defer close(errChan)
-			newOrder, err := fetchAccrualInfo(AccrualSystemAddress, orderNumber)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			orderChan <- newOrder
-		}(withdraw.OrderNumber)
+		orderChan, errChan := h.accrual.FetchOrder(AccrualSystemAddress, withdraw.OrderNumber)
 
 		orderInfo := models.Order{}
 
@@ -225,11 +156,11 @@ func (h *Handler) Withdraw(AccrualSystemAddress string) http.HandlerFunc {
 			orderInfo.Withdrawn = withdraw.SumWithdrawn
 			orderInfo.UserID = UserID
 		case err := <-errChan:
-			if errors.Is(err, ErrorStatusTooManyRequests) {
+			if errors.Is(err, services.ErrorStatusTooManyRequests) {
 				http.Error(w, "No more than N requests per minute allowed", http.StatusTooManyRequests)
 				return
 			}
-			if errors.Is(err, ErrorOrderNotFound) {
+			if errors.Is(err, services.ErrorOrderNotFound) {
 				orderInfo.OrderID = withdraw.OrderNumber
 				orderInfo.UserID = UserID
 				orderInfo.Withdrawn = withdraw.SumWithdrawn

@@ -13,6 +13,7 @@ type Handler struct {
 	jwt     services.JWTService
 	order   storage.OrderStorage
 	balance storage.BalanceStorage
+	accrual services.AccrualService
 }
 
 func NewHandler(dbPool *pgxpool.Pool) *Handler {
@@ -22,5 +23,6 @@ func NewHandler(dbPool *pgxpool.Pool) *Handler {
 		jwt:     services.NewJWTService(),
 		order:   storage.NewOrderStorage(dbPool),
 		balance: storage.NewBalanceStorage(dbPool),
+		accrual: services.NewAccrualService(),
 	}
 }
